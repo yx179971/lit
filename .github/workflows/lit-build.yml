@@ -1,0 +1,43 @@
+name: Lit Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_backend:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: pack backend
+        run: pyinstaller -F -n Lit.exe --collect-data pygwalker --collect-all streamlit --collect-all pandas -y main.py
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v0.0.1
+          release_name: Release v0.0.1
+          draft: false
+          prerelease: false
+
+      - name: Upload release assets
+        id: upload-release-assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/Lit.exe
+          asset_name: Lit.exe
+          asset_content_type: application/zip
